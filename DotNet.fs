@@ -2,8 +2,8 @@ namespace Albelli
 
 open Fake
 
-    module DotNet = 
-        let projectHasLambdaTools (projectPath : string) : bool = 
+    module DotNet =
+        let projectHasLambdaTools (projectPath : string) : bool =
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "Amazon.Lambda.Tools"
 
@@ -13,3 +13,13 @@ open Fake
             let outputFile = outputFolder </> (projectName + ".zip") |> System.IO.Path.GetFullPath
             sprintf "lambda package --output-package %s --configuration Release --framework %s" outputFile lambdaFramework
             |> DotNetCli.RunCommand (fun o -> { o with WorkingDir = projectDirectory } )
+
+        let packageProjectAsLambdaDefaultFramework outputFolder projectPath = 
+            let xPath = "/Project/PropertyGroup/TargetFramework/text()"
+            let framework 
+                = projectPath
+                  |> System.IO.File.ReadAllText
+                  |> XMLDoc
+                  |> XPathValue xPath []
+    
+            packageProjectAsLambda framework outputFolder projectPath
