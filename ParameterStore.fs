@@ -4,6 +4,7 @@
 
 namespace Albelli
 
+open Fake
 open Amazon.SimpleSystemsManagement
 
     module ParameterStore =
