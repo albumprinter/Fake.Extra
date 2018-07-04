@@ -8,20 +8,57 @@ open Fake
 open Amazon.SimpleSystemsManagement
 
     module ParameterStore =
-        let private parameterStoreParameters() = lazy (
-          let parameterStorePrefix = "/build/variables"
-          let parameterStorePrefixTrailingSlash = parameterStorePrefix + "/"
-          use client = new AmazonSimpleSystemsManagementClient()
+        let private getParametersStoreParameters() = 
+            let parameterStorePrefix = "/build/variables"
+            let parameterStorePrefixTrailingSlash = parameterStorePrefix + "/"
+            use client = new AmazonSimpleSystemsManagementClient()
 
-          Model.GetParametersByPathRequest (
-                      WithDecryption = true,
-                      Path = parameterStorePrefix,
-                      MaxResults = 10, // should be more than enough for this script
-                      Recursive = true)
-          |> client.GetParametersByPath
-          |> fun x-> x.Parameters
-          |> Seq.map (fun p -> p.Name.Substring(parameterStorePrefixTrailingSlash.Length), p.Value)
-          |> Map.ofSeq
+            let createRequest nextToken =
+              Model.GetParametersByPathRequest(
+                  WithDecryption = true,
+                  Path = parameterStorePrefix,
+                  MaxResults = 10,
+                  Recursive = true,
+                  NextToken = nextToken)
+            
+            let getNextResponse token =
+                let response = 
+                    createRequest token
+                    |> client.GetParametersByPath
+
+                let parameters =
+                    response
+                    |> fun x-> x.Parameters
+                    |> List.ofSeq
+
+                response.NextToken, parameters
+
+
+            let parameterStoreParams = 
+                let rec recursiveParams nextToken acc = 
+                    let newToken, newParamsList = getNextResponse nextToken
+                    if System.String.IsNullOrEmpty(nextToken) then
+                        acc @ newParamsList
+                    else
+                        recursiveParams newToken (acc @ newParamsList)
+                
+                let newToken, newParamsList = getNextResponse null
+                if System.String.IsNullOrEmpty(newToken) then
+                        newParamsList
+                else
+                        recursiveParams newToken newParamsList
+            
+            parameterStoreParams
+            |> Seq.map (fun p -> p.Name.Substring(parameterStorePrefixTrailingSlash.Length), p.Value)
+            |> Map.ofSeq
+
+        let private parameterStoreParameters() = lazy (
+          try
+            getParametersStoreParameters()
+          with
+            | ex ->
+                tracefn "Failed to get parameter store parameters %s" ex.Message
+                Map.empty
         )
 
         let parameterStoreVarOrNone var = 
