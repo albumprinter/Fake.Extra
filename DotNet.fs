@@ -3,6 +3,14 @@ namespace Albelli
 open Fake
 
     module DotNet =
+
+        let private addToPath directory = 
+            let pathvar = System.Environment.GetEnvironmentVariable("PATH")
+            let fullPath = directory |> System.IO.Path.GetFullPath
+            let value  = pathvar + ";" + fullPath;
+            let target = System.EnvironmentVariableTarget.Process
+            System.Environment.SetEnvironmentVariable("PATH", value, target)
+
         let projectHasLambdaTools (projectPath : string) : bool =
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<AWSProjectType>Lambda</AWSProjectType>"
@@ -14,7 +22,7 @@ open Fake
             sprintf "lambda package --output-package %s --configuration Release --framework %s --project-location %s" outputFile lambdaFramework projectDirectory
             |> DotNetCli.RunCommand id
 
-        let getFrameworkFromProject projectPath = 
+        let private getFrameworkFromProject projectPath = 
             let xPath = "/Project/PropertyGroup/TargetFramework/text()"
             projectPath
                   |> System.IO.File.ReadAllText
@@ -32,3 +40,4 @@ open Fake
         let installToolPackage package version directory =
             sprintf "tool install %s --version %s --tool-path %s" package version directory
             |> DotNetCli.RunCommand id
+            addToPath(directory)
