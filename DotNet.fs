@@ -7,7 +7,8 @@ open Fake
         let private addToPath directory = 
             let pathvar = System.Environment.GetEnvironmentVariable("PATH")
             let fullPath = directory |> System.IO.Path.GetFullPath
-            let value  = pathvar + ";" + fullPath;
+            let separator = if EnvironmentHelper.isLinux then ":" else ";";
+            let value  = pathvar + separator + fullPath;
             let target = System.EnvironmentVariableTarget.Process
             System.Environment.SetEnvironmentVariable("PATH", value, target)
 
