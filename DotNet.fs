@@ -16,7 +16,7 @@ open Fake
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<AWSProjectType>Lambda</AWSProjectType>"
 
-        let packageProjectAsLambdaUsingGlobalTools lambdaFramework outputFolder projectPath =
+        let packageProjectAsLambdaUsingGlobalTools lambdaFramework outputFolder (projectPath : string) =
             let projectDirectory = System.IO.Path.GetDirectoryName projectPath
             let projectName = System.IO.Path.GetFileName projectDirectory
             let outputFile = outputFolder </> (projectName + ".zip") |> System.IO.Path.GetFullPath
