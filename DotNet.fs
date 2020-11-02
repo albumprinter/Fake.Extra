@@ -16,6 +16,10 @@ open Fake
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<AWSProjectType>Lambda</AWSProjectType>"
 
+        let isEcsMainProject (projectPath : string) : bool =
+            System.IO.File.ReadAllText projectPath
+            |> fun x -> x.Contains "<PropertyGroup Label=\"EcsMainProject\" />"
+
         let packageProjectAsLambdaUsingGlobalTools lambdaFramework outputFolder (projectPath : string) =
             let projectDirectory = System.IO.Path.GetDirectoryName projectPath
             let projectName = System.IO.Path.GetFileName projectDirectory
