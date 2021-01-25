@@ -2,13 +2,11 @@
 // In order for this module to work, the following dlls should be included in the main script:
 // nuget Fake.DotNet.Cli
 // nuget Fake.Tools.GitVersion
-#load "./.fake/build.fsx/intellisense.fsx"
+namespace Albelli
 
 open Fake.Core
 open Fake.DotNet
 open Newtonsoft.Json
-
-namespace Albelli
 
     module GitVersionTool =
         let generateProperties() =
