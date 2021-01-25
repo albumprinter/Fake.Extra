@@ -16,7 +16,7 @@ type JiraCliConfig = {
             password : string
         }
 
-    module Internal = 
+    module Internal =
         type private EitherBuilder<'a, 'b>() =
             member __.Bind(m,f) =
                      match m with
@@ -29,7 +29,7 @@ type JiraCliConfig = {
 
         let private errorFlow = EitherBuilder()
 
-        let private runGitCommandOpt cmd = 
+        let private runGitCommandOpt cmd =
             let success, msg, err =
                 cmd
                 |> runGitCommand currentDirectory
@@ -60,19 +60,19 @@ let private jiraCliExec config arg =
     let jiraCliExe = findToolInSubPath "JiraCli.exe" "packages"
     ProcessHelper.enableProcessTracing <- false
     let fullArgs = sprintf "-user \"%s\" -pw \"%s\" -url \"%s\" %s" config.userName config.password config.url arg
-    
-    let success = execProcess 
+
+    let success = execProcess
                     (fun p -> p.FileName <- jiraCliExe; p.Arguments <- fullArgs)
                     (TimeSpan.FromMinutes 2.)
-    ProcessHelper.enableProcessTracing <- true                
-    if (not success) then failwith "failed to run JiraCli"    
+    ProcessHelper.enableProcessTracing <- true
+    if (not success) then failwith "failed to run JiraCli"
 
 let private getCmdFromJiraCliCommand = function
     CustomExec arg -> arg
     | AssignVersion (project,version,issues)
-        -> sprintf "-action AssignVersion -project \"%s\" -version \"%s\" -issues \"%s\"" 
+        -> sprintf "-action AssignVersion -project \"%s\" -version \"%s\" -issues \"%s\""
             project
-            version 
+            version
             (issues |> String.concat ",")
     | CreateVersion (project, version)
         -> sprintf "-action CreateVersion -project \"%s\" -version \"%s\"" project version
@@ -99,24 +99,24 @@ let parseJiraIdsFromCommits commits =
     let regex = "[a-zA-Z]+-\\d+"
 
     let matches regex input =
-        Regex.Matches(input, regex) 
+        Regex.Matches(input, regex)
         |> Seq.cast<Match>
         |> Seq.groupBy (fun m -> m.Value)
         |> Seq.map fst
-    
+
     commits
     |> String.concat " "
     |> matches regex
 
 let magicallyPublishJiraRelease projectName version cfg=
-    
-    let assignCommitsToVersion version commits = 
+
+    let assignCommitsToVersion version commits =
         AssignVersion (projectName, version, commits)
         |> jiraCli cfg
-    
+
     CreateVersion (projectName, version)
     |> jiraCli cfg
-    
+
     Internal.getCommitsSinceLastTag()
     |> parseJiraIdsFromCommits
     |> Seq.filter (fun x -> x.Contains(projectName)) // filterNonProjectIds
@@ -124,4 +124,4 @@ let magicallyPublishJiraRelease projectName version cfg=
     |> assignCommitsToVersion version
 
     ReleaseVersion (projectName, version)
-    |> jiraCli cfg 
+    |> jiraCli cfg

@@ -4,7 +4,7 @@ open Fake
 
     module DotNet =
 
-        let private addToPath directory = 
+        let private addToPath directory =
             let pathvar = System.Environment.GetEnvironmentVariable("PATH")
             let fullPath = directory |> System.IO.Path.GetFullPath
             let separator = if EnvironmentHelper.isLinux then ":" else ";";
@@ -27,16 +27,16 @@ open Fake
             sprintf "lambda package --output-package %s --configuration Release --framework %s --project-location %s" outputFile lambdaFramework projectDirectory
             |> DotNetCli.RunCommand id
 
-        let private getFrameworkFromProject projectPath = 
+        let private getFrameworkFromProject projectPath =
             let xPath = "/Project/PropertyGroup/TargetFramework/text()"
             projectPath
                   |> System.IO.File.ReadAllText
                   |> XMLDoc
                   |> XPathValue xPath []
-                  
-        let packageProjectAsLambdaDefaultFrameworkUsingGlobalTools outputFolder projectPath = 
+
+        let packageProjectAsLambdaDefaultFrameworkUsingGlobalTools outputFolder projectPath =
             let framework = getFrameworkFromProject projectPath
-            packageProjectAsLambdaUsingGlobalTools framework outputFolder projectPath            
+            packageProjectAsLambdaUsingGlobalTools framework outputFolder projectPath
 
         let installGlobalToolPackage package version =
             sprintf "tool install -g %s --version %s" package version
