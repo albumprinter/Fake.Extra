@@ -5,6 +5,7 @@
 namespace Albelli
 
 open Fake
+open Fake.Core
 open Amazon.SimpleSystemsManagement
 
     module ParameterStore =
@@ -24,7 +25,7 @@ open Amazon.SimpleSystemsManagement
             let getNextResponse token =
                 let response =
                     createRequest token
-                    |> client.GetParametersByPath
+                    |> client.GetParametersByPathAsync |> Async.AwaitTask |> Async.RunSynchronously
 
                 let parameters =
                     response
@@ -57,7 +58,7 @@ open Amazon.SimpleSystemsManagement
             getParametersStoreParameters()
           with
             | ex ->
-                tracefn "Failed to get parameter store parameters %s" ex.Message
+                failwithf "Failed to get parameter store parameters %s" ex.Message
                 Map.empty
         )
 
@@ -66,7 +67,7 @@ open Amazon.SimpleSystemsManagement
             |> Map.tryFind var
 
         let anyVarOrNone var =
-            match environVarOrNone var with
+            match Environment.environVarOrNone var with
             | None _ -> parameterStoreVarOrNone var
             | x -> x
 
