@@ -1,16 +1,12 @@
 namespace Albelli
 
 open Fake
+open Fake.DotNet
+open Fake.Core
+open Fake.Core.Xml
+open Fake.IO.FileSystemOperators
 
     module DotNet =
-
-        let private addToPath directory =
-            let pathvar = System.Environment.GetEnvironmentVariable("PATH")
-            let fullPath = directory |> System.IO.Path.GetFullPath
-            let separator = if EnvironmentHelper.isLinux then ":" else ";";
-            let value  = pathvar + separator + fullPath;
-            let target = System.EnvironmentVariableTarget.Process
-            System.Environment.SetEnvironmentVariable("PATH", value, target)
 
         let projectHasLambdaTools (projectPath : string) : bool =
             System.IO.File.ReadAllText projectPath
@@ -20,29 +16,31 @@ open Fake
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<PropertyGroup Label=\"EcsMainProject\" />"
 
-        let packageProjectAsLambdaUsingGlobalTools lambdaFramework outputFolder (projectPath : string) =
+        let packageProjectAsLambda lambdaFramework outputFolder (projectPath : string) =
             let projectDirectory = System.IO.Path.GetDirectoryName projectPath
             let projectName = System.IO.Path.GetFileName projectDirectory
             let outputFile = outputFolder </> (projectName + ".zip") |> System.IO.Path.GetFullPath
-            sprintf "lambda package --output-package %s --configuration Release --framework %s --project-location %s" outputFile lambdaFramework projectDirectory
-            |> DotNetCli.RunCommand id
+            let args = 
+                Arguments.Empty
+                |> Arguments.append ["package"]
+                |> Arguments.appendNotEmpty "--output-package" outputFile
+                |> Arguments.appendNotEmpty "--configuration" "Release"
+                |> Arguments.appendNotEmpty "--framework" lambdaFramework
+                |> Arguments.appendNotEmpty "--project-location" projectDirectory
+                |> Arguments.toArray
+            let proc =
+                CreateProcess.fromRawCommand "lambda" args
+                |> CreateProcess.withToolType (ToolType.CreateLocalTool())
+                |> CreateProcess.redirectOutput
+                |> Proc.run
+            if proc.ExitCode <> 0 then failwithf "dotnet lambda package failed with exit code %i and message %s" proc.ExitCode proc.Result.Output
 
         let private getFrameworkFromProject projectPath =
-            let xPath = "/Project/PropertyGroup/TargetFramework/text()"
+            let xPath = "/*[local-name()='Project']/*[local-name()='PropertyGroup']/*[local-name()='TargetFramework']"
             projectPath
-                  |> System.IO.File.ReadAllText
-                  |> XMLDoc
-                  |> XPathValue xPath []
+            |> Fake.Core.Xml.loadDoc
+            |> Fake.Core.Xml.selectXPathValue xPath []
 
-        let packageProjectAsLambdaDefaultFrameworkUsingGlobalTools outputFolder projectPath =
+        let packageProjectAsLambdaDefaultFramework outputFolder projectPath =
             let framework = getFrameworkFromProject projectPath
-            packageProjectAsLambdaUsingGlobalTools framework outputFolder projectPath
-
-        let installGlobalToolPackage package version =
-            sprintf "tool install -g %s --version %s" package version
-            |> DotNetCli.RunCommand id
-
-        let installToolPackage package version directory =
-            sprintf "tool install %s --version %s --tool-path %s" package version directory
-            |> DotNetCli.RunCommand id
-            addToPath(directory)
+            packageProjectAsLambda framework outputFolder projectPath
