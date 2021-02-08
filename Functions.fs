@@ -1,4 +1,5 @@
-module Albelli
+namespace Albelli
 
-    let uncurry f (a, b) = f a b
-    let curry f a b = f(a, b)
+    module Functions =
+        let uncurry f (a, b) = f a b
+        let curry f a b = f(a, b)
