@@ -44,3 +44,21 @@ open Fake.IO.FileSystemOperators
         let packageProjectAsLambdaDefaultFramework outputFolder projectPath =
             let framework = getFrameworkFromProject projectPath
             packageProjectAsLambda framework outputFolder projectPath
+
+        let ocotoPack id version basPath outFolder =
+            let args = 
+                Arguments.Empty
+                |> Arguments.append ["pack"]
+                |> Arguments.appendNotEmpty "--id" id
+                |> Arguments.appendNotEmpty "--version" version
+                |> Arguments.appendNotEmpty "--basepath" basPath
+                |> Arguments.appendNotEmpty "--outFolder" outFolder
+                |> Arguments.toArray
+
+            let proc =
+                CreateProcess.fromRawCommand "octo" args
+                |> CreateProcess.withToolType (ToolType.CreateLocalTool())
+                |> CreateProcess.redirectOutput
+                |> Proc.run
+
+            if proc.ExitCode <> 0 then failwithf "Octo failed with exit code %i and message %s" proc.ExitCode proc.Result.Output
