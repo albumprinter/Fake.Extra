@@ -16,6 +16,12 @@ open Fake.IO.FileSystemOperators
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<PropertyGroup Label=\"EcsMainProject\" />"
 
+        let getAssemblyName (projectPath : string) : string =
+            let xPath = "/*[local-name()='Project']/*[local-name()='PropertyGroup']/*[local-name()='AssemblyName']"
+            projectPath
+            |> Fake.Core.Xml.loadDoc
+            |> Fake.Core.Xml.selectXPathValue xPath []   
+
         let packageProjectAsLambda lambdaFramework outputFolder (projectPath : string) =
             let projectDirectory = System.IO.Path.GetDirectoryName projectPath
             let projectName = System.IO.Path.GetFileName projectDirectory
