@@ -16,6 +16,10 @@ open Fake.IO.FileSystemOperators
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<PropertyGroup Label=\"EcsMainProject\" />"
 
+        let isEcsProject (projectPath : string) : bool =
+            System.IO.File.ReadAllText projectPath
+            |> fun x -> x.Contains "<PropertyGroup Label=\"EcsProject\" />"
+
         let packageProjectAsLambda lambdaFramework outputFolder (projectPath : string) =
             let projectDirectory = System.IO.Path.GetDirectoryName projectPath
             let projectName = System.IO.Path.GetFileName projectDirectory
