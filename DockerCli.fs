@@ -19,19 +19,21 @@ open Fake.Core
                 |> Proc.run
             if proc.ExitCode <> 0 then failwithf "docker login failed with exit code %i and message %s" proc.ExitCode proc.Result.Error
         
-        let build (dockerImageTag: string) (outputDirectory: string) =
+        let build (dockerfilePath: string) (dockerImageTag: string) (contextDirectory: string) =
             let args = 
                 Arguments.Empty
                 |> Arguments.append ["build"]
-                |> Arguments.appendNotEmpty "-f" "Dockerfile"
+                |> Arguments.appendNotEmpty "-f" dockerfilePath
                 |> Arguments.appendNotEmpty "-t" dockerImageTag 
-                |> Arguments.append [outputDirectory]
+                |> Arguments.append [contextDirectory]
                 |> Arguments.toArray
             let proc =
                 CreateProcess.fromRawCommand "docker" args
                 |> CreateProcess.redirectOutput
                 |> Proc.run
             if proc.ExitCode <> 0 then failwithf "docker build failed with exit code %i and message %s" proc.ExitCode proc.Result.Error
+
+        let build (dockerImageTag: string) (contextDirectory: string) = build "Dockerfile" dockerImageTag contextDirectory
        
         let push (dockerImageTag: string) =
             let args = 
