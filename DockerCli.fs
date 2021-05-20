@@ -17,7 +17,7 @@ open Fake.Core
                 CreateProcess.fromRawCommand "docker" args
                 |> CreateProcess.redirectOutput
                 |> Proc.run
-            if proc.ExitCode <> 0 then failwithf "docker login failed with exit code %i and message %s" proc.ExitCode proc.Result.Output
+            if proc.ExitCode <> 0 then failwithf "docker login failed with exit code %i and message %s" proc.ExitCode proc.Result.Error
         
         let build (dockerImageTag: string) (outputDirectory: string) =
             let args = 
@@ -31,7 +31,7 @@ open Fake.Core
                 CreateProcess.fromRawCommand "docker" args
                 |> CreateProcess.redirectOutput
                 |> Proc.run
-            if proc.ExitCode <> 0 then failwithf "docker build failed with exit code %i and message %s" proc.ExitCode proc.Result.Output
+            if proc.ExitCode <> 0 then failwithf "docker build failed with exit code %i and message %s" proc.ExitCode proc.Result.Error
        
         let push (dockerImageTag: string) =
             let args = 
@@ -42,4 +42,4 @@ open Fake.Core
                 CreateProcess.fromRawCommand "docker" args
                 |> CreateProcess.redirectOutput
                 |> Proc.run
-            if proc.ExitCode <> 0 then failwithf "docker push failed with exit code %i and message %s" proc.ExitCode proc.Result.Output
+            if proc.ExitCode <> 0 then failwithf "docker push failed with exit code %i and message %s" proc.ExitCode proc.Result.Error
