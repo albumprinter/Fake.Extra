@@ -12,6 +12,10 @@ open Fake.IO.FileSystemOperators
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<AWSProjectType>Lambda</AWSProjectType>"
 
+        let hasCustomLambdaArchitecture (projectPath : string) : bool =
+            System.IO.File.ReadAllText projectPath
+            |> fun x -> x.Contains "<AWSProjectArchitecture>"
+
         let isEcsMainProject (projectPath : string) : bool =
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<PropertyGroup Label=\"EcsMainProject\" />"
@@ -20,10 +24,17 @@ open Fake.IO.FileSystemOperators
             System.IO.File.ReadAllText projectPath
             |> fun x -> x.Contains "<PropertyGroup Label=\"EcsProject\" />"
 
+        let private getLambdaArchitecture projectPath =
+            let xPath = "/*[local-name()='Project']/*[local-name()='PropertyGroup']/*[local-name()='AWSProjectArchitecture']"
+            projectPath
+            |> Fake.Core.Xml.loadDoc
+            |> Fake.Core.Xml.selectXPathValue xPath []
+
         let packageProjectAsLambda lambdaFramework outputFolder (projectPath : string) =
             let projectDirectory = System.IO.Path.GetDirectoryName projectPath
             let projectName = System.IO.Path.GetFileName projectDirectory
             let outputFile = outputFolder </> (projectName + ".zip") |> System.IO.Path.GetFullPath
+            let functionArchitecture = if (hasCustomLambdaArchitecture projectPath) then getLambdaArchitecture projectPath else ""
             let args = 
                 Arguments.Empty
                 |> Arguments.append ["package"]
@@ -31,6 +42,7 @@ open Fake.IO.FileSystemOperators
                 |> Arguments.appendNotEmpty "--configuration" "Release"
                 |> Arguments.appendNotEmpty "--framework" lambdaFramework
                 |> Arguments.appendNotEmpty "--project-location" projectDirectory
+                |> Arguments.appendNotEmpty "--function-architecture" functionArchitecture
                 |> Arguments.toArray
             let proc =
                 CreateProcess.fromRawCommand "lambda" args
